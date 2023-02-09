@@ -13,8 +13,6 @@
 #include <unistd.h>
 using namespace std;
 
-//See paste.cc for a description of how the copy/paste and XDnD state machine works.
-
 //See process_selection_request to see how to perform a paste when a SelectionNotify
 //event arrives.
 
@@ -25,10 +23,6 @@ using namespace std;
 
 Atom XA_TARGETS;
 Atom XA_multiple;
-Atom XA_image_bmp;
-Atom XA_image_jpg;
-Atom XA_image_tiff;
-Atom XA_image_png;
 Atom XA_text_uri_list;
 Atom XA_text_uri;
 Atom XA_text_plain;
@@ -61,35 +55,6 @@ string GetAtomName(Display* disp, Atom a)
 	else
 		return XGetAtomName(disp, a);
 }
-
-
-//A simple, inefficient function for reading a
-//whole file in to memory
-string read_whole_file(const string& name, string& fullname)
-{
-	ostringstream f;
-	ifstream file;
-
-	//Try in the current directory first, then in the data directory
-	{
-		vector<char> buf(4096, 0);
-		getcwd(&buf[0], 4095);
-		fullname = &buf[0] + string("/") + name;
-	}
-
-	file.open(fullname.c_str(), ios::binary);
-
-	if(!file.good())
-	{
-		fullname = DATADIR + name;
-		file.open(fullname.c_str(), ios::binary);
-	}
-
-	f << file.rdbuf();
-
-	return f.str();
-}
-
 
 //Construct a list of targets and place them in the specified property This
 //consists of all datatypes we know of as well as TARGETS and MULTIPLE. Reading
@@ -241,11 +206,13 @@ Window find_app_window(Display* disp, Window w)
 	return find_app_window(disp, child);
 }
 
-
-
-
 int main(int argc, char**argv)
 {
+	if (argc <= 1) {
+		cout << "usage: dragbox files..." << endl;
+		cout << "open a x11 window to drag from" << endl;
+		return 1;
+	}
 
 	Display* disp;
 	Window root, w;
@@ -261,36 +228,13 @@ int main(int argc, char**argv)
 	//but it does not need to be mapped.
 	w = XCreateSimpleWindow(disp, root, 0, 0, 100, 100, 0, BlackPixel(disp, screen), BlackPixel(disp, screen));
 
-
-	cerr << "Created window: 0x" << hex <<  w << dec << endl << endl;
-
-
-	bool dnd = 0;
+	bool dnd = 1;
 	Atom selection = XA_PRIMARY;
-
-
-	//The 1st command line argument is the selection name. Default is PRIMARY
-	//or alternatively, it can specify DnD operation.
-	if(argc > 1)
-	{
-		if(argv[1] == string("-dnd"))
-			dnd = 1;
-		else
-			selection = XInternAtom(disp, argv[1], 0);
-	}
-
 
 	//None of these atoms are provided in Xatom.h
 	XA_TARGETS = XInternAtom(disp, "TARGETS", False);
 	XA_multiple = XInternAtom(disp, "MULTIPLE", False);
-	XA_image_bmp = XInternAtom(disp, "image/bmp", False);
-	XA_image_jpg = XInternAtom(disp, "image/jpeg", False);
-	XA_image_tiff = XInternAtom(disp, "image/tiff", False);
-	XA_image_png = XInternAtom(disp, "image/png", False);
 	XA_text_uri_list = XInternAtom(disp, "text/uri-list", False);
-	XA_text_uri= XInternAtom(disp, "text/uri", False);
-	XA_text_plain = XInternAtom(disp, "text/plain", False);
-	XA_text = XInternAtom(disp, "TEXT", False);
 	XA_XdndSelection = XInternAtom(disp, "XdndSelection", False);
 	XA_XdndAware = XInternAtom(disp, "XdndAware", False);
 	XA_XdndEnter = XInternAtom(disp, "XdndEnter", False);
@@ -308,18 +252,13 @@ int main(int argc, char**argv)
 	//incarnations.
 	map<Atom, string> typed_data; string url;
 
-	typed_data[XA_image_bmp] = read_whole_file("r0x0r.bmp", url);
-	typed_data[XA_image_jpg] = read_whole_file("r0x0r.jpg", url);
-	typed_data[XA_image_tiff] = read_whole_file("r0x0r.tiff", url);
-	typed_data[XA_image_png] = read_whole_file("r0x0r.png", url);
-
-	url = "file://" + url;
+	for (int i = 1; i < argc; i++) {
+		char * p = realpath(argv[i], NULL);
+		url = url + "file://" + p + "\n";
+		free(p);
+	}
 
 	typed_data[XA_text_uri_list] = url;
-	typed_data[XA_text_uri] = url;
-	typed_data[XA_text_plain] = url;
-	typed_data[XA_text] = url;
-	typed_data[XA_STRING] = url;
 
 
 

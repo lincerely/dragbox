@@ -1,32 +1,9 @@
-Try:
+dragbox
 
-./selection [<clipboard>]
+Usage:
 
-To copy the image to the <clipboard> in the form of a PNG, JPEG, TIFF,
-BMP URL string or text string. If you do not specify <clipboard>
-PRIMARY will be used.
+	dragbox files...
 
-./selection -dnd
+This will open a x11 window to drag from.
 
-To do the largely same, except with a window to drag the image from rather
-than holding it in the clipboard.
-
-
-
-Then
-
-./paste [<clipboard> [type1 [type2 [ ... ] ] ] ]
-
-Paste the data in <clipboard> or PRIMARY (select/middle click). You must
-specify <clipboard> if you want to specify which datatypes to fetch in
-order of preference. STRING is used if none are specified.
-
-
-./paste -dnd [...]
-
-to do the same, except it provides a window to drop things on to, instead of
-pasting from PRIMARY.
-
-
-
-Operation of these programs is very verbose, and well documented in paste.cc
+This program is modified from https://github.com/edrosten/x_clipboard, in order to facilitate AzPainter 3 's drag and drop functions in XQuartz.
